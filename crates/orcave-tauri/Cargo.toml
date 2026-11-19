@@ -1,0 +1,54 @@
+[package]
+name = "orcave-tauri"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Orcave Tauri application - Main entry point and Tauri command handlers"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+reqwest = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tauri = { workspace = true }
+tauri-plugin-store = { workspace = true }
+tauri-plugin-shell = { workspace = true }
+tauri-plugin-dialog = { workspace = true }
+tauri-plugin-fs = { workspace = true }
+tauri-plugin-opener = { workspace = true }
+tauri-plugin-clipboard = { workspace = true }
+tauri-plugin-notification = { workspace = true }
+tauri-plugin-http = { workspace = true }
+tauri-plugin-process = { workspace = true }
+url = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+once_cell = { workspace = true }
+lazy_static = { workspace = true }
+directories = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+
+orcave-core = { path = "../orcave-core" }
+orcave-auth = { path = "../orcave-auth" }
+orcave-catalogue = { path = "../orcave-catalogue" }
+orcave-audio = { path = "../orcave-audio" }
+orcave-queue = { path = "../orcave-queue" }
+orcave-library = { path = "../orcave-library" }
+orcave-recommendations = { path = "../orcave-recommendations" }
+orcave-settings = { path = "../orcave-settings" }
+orcave-windows = { path = "../orcave-windows" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+mockall = { workspace = true }
+
+[build-dependencies]
+tauri-build = { workspace = true }

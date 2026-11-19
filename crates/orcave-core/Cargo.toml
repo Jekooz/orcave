@@ -1,0 +1,41 @@
+[package]
+name = "orcave-core"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Orcave core application state and runtime"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+bytes = { workspace = true }
+once_cell = { workspace = true }
+lazy_static = { workspace = true }
+indexmap = { workspace = true }
+smallvec = { workspace = true }
+ahash = { workspace = true }
+ulid = { workspace = true }
+directories = { workspace = true }
+notify = { workspace = true }
+zeroize = { workspace = true, features = ["derive"] }
+blake3 = { workspace = true }
+rand = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+mockall = { workspace = true }
+wiremock = { workspace = true }

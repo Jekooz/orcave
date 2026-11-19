@@ -1,0 +1,125 @@
+[workspace]
+resolver = "2"
+
+# Orcave 2.0 Alpha workspace.
+# Rust owns all application state and backend processes.
+# Tauri 2 + React/TypeScript provides the minimal diagnostic UI.
+members = [
+    "crates/orcave-core",
+    "crates/orcave-auth",
+    "crates/orcave-catalogue",
+    "crates/orcave-audio",
+    "crates/orcave-queue",
+    "crates/orcave-library",
+    "crates/orcave-recommendations",
+    "crates/orcave-session",
+    "crates/orcave-settings",
+    "crates/orcave-windows",
+    "crates/orcave-tauri",
+]
+exclude = [
+    "apps/sonore-desktop",
+    "backend",
+    "tests",
+    "packaging",
+    "archive",
+    "docs",
+    "frontend",
+]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[workspace.package]
+version = "0.2.0-alpha"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/orcave/orcave"
+description = "Orcave 2.0 Alpha - Windows YouTube Music client in Rust/Tokio"
+
+[workspace.dependencies]
+tokio = { version = "1.40", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tauri = { version = "2.0", features = [] }
+tauri-build = "2.0"
+tauri-plugin-store = "2.0"
+tauri-plugin-shell = "2.0"
+tauri-plugin-dialog = "2.0"
+tauri-plugin-fs = "2.0"
+tauri-plugin-opener = "2.0"
+tauri-plugin-clipboard = "2.0"
+tauri-plugin-global-shortcut = "2.0"
+tauri-plugin-notification = "2.0"
+tauri-plugin-updater = "2.0"
+tauri-plugin-http = "2.0"
+tauri-plugin-process = "2.0"
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "cookies", "gzip", "brotli", "multipart"] }
+url = "2.5"
+uuid = { version = "1.8", features = ["v4", "v7", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+dashmap = "5.5"
+parking_lot = "0.12"
+async-trait = "0.1"
+futures = "0.3"
+bytes = "1.5"
+mime = "0.3"
+mime_guess = "2.0"
+percent-encoding = "2.3"
+blake3 = "1.5"
+aes-gcm = "0.10"
+base64 = "0.22"
+ring = "0.17"
+zeroize = { version = "1.8", features = ["derive"] }
+zeroize_derive = "1.4"
+rand = "0.8"
+argon2 = "0.5"
+jsonwebtoken = "9.3"
+rmp-serde = "1.1"
+bincode = "1.3"
+rodio = { version = "0.20" }
+cpal = "0.15"
+symphonia = { version = "0.5", features = ["vorbis", "mp3", "flac", "aac", "wav", "isomp4"] }
+rubato = "0.13"
+hound = "3.5"
+image = { version = "0.25", features = ["png", "jpeg", "gif", "webp", "bmp", "ico"] }
+tauri-utils = { version = "2.0", features = ["acl"] }
+serde_bytes = "0.11"
+ulid = { version = "1.0", features = ["serde"] }
+indexmap = "2.2"
+smallvec = "1.13"
+ahash = "0.8"
+once_cell = "1.19"
+lazy_static = "1.4"
+regex = "1.10"
+glob = "0.3"
+walkdir = "2.4"
+notify = { version = "6.1" }
+directories = "5.0"
+winreg = "0.11"
+windows = { version = "0.59" }
+windows-result = "0.100"
+windows-core = "0.59"
+winit = { version = "0.30", features = ["serde"] }
+raw-window-handle = "0.6"
+softbuffer = "0.14"
+accesskit = "0.13"
+accesskit_winit = "0.13"
+accesskit_tauri = "0.2"
+# Testing
+proptest = "1.4"
+rstest = "0.18"
+mockall = "0.13"
+tokio-test = "0.4"
+wiremock = "0.6"

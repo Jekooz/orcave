@@ -1,0 +1,39 @@
+[package]
+name = "orcave-settings"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Orcave settings management - persistent configuration with encryption"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+directories = { workspace = true }
+notify = { workspace = true }
+tauri = { workspace = true }
+tauri-plugin-store = { workspace = true }
+zeroize = { workspace = true }
+once_cell = { workspace = true }
+blake3 = { workspace = true }
+rand = { workspace = true }
+aes-gcm = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = ["Win32_Foundation", "Win32_Security_Cryptography"] }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+mockall = { workspace = true }
+wiremock = { workspace = true }

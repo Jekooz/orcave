@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-orcave-border;
+  }
+
+  body {
+    @apply bg-orcave-bg text-orcave-text antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  ::selection {
+    @apply bg-orcave-primary/30 text-orcave-text;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-orcave-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-orcave-muted;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-orcave-primary focus-visible:ring-offset-2 focus-visible:ring-offset-orcave-bg disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-orcave-primary text-orcave-bg hover:bg-orcave-primaryHover active:bg-orcave-primary/90;
+  }
+
+  .btn-secondary {
+    @apply btn bg-orcave-surfaceElevated text-orcave-text hover:bg-orcave-border active:bg-orcave-border;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-orcave-text hover:bg-orcave-surfaceElevated active:bg-orcave-border;
+  }
+
+  .btn-danger {
+    @apply btn bg-orcave-error text-white hover:bg-orcave-error/90 active:bg-orcave-error;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 rounded-lg bg-orcave-surface border border-orcave-border text-orcave-text placeholder-orcave-muted focus:outline-none focus:ring-2 focus:ring-orcave-primary focus:border-transparent transition-all duration-150;
+  }
+
+  .card {
+    @apply bg-orcave-surface border border-orcave-border rounded-xl overflow-hidden transition-all duration-200 hover:border-orcave-primary/50;
+  }
+
+  .card-elevated {
+    @apply bg-orcave-surfaceElevated border border-orcave-border rounded-xl overflow-hidden shadow-lg;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-orcave-muted hover:text-orcave-text hover:bg-orcave-surfaceElevated transition-all duration-150 cursor-pointer;
+  }
+
+  .sidebar-item-active {
+    @apply text-orcave-primary bg-orcave-primary/10 font-medium;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-orcave-primary/20 text-orcave-primary;
+  }
+
+  .badge-success {
+    @apply badge bg-orcave-success/20 text-orcave-success;
+  }
+
+  .badge-warning {
+    @apply badge bg-orcave-warning/20 text-orcave-warning;
+  }
+
+  .badge-error {
+    @apply badge bg-orcave-error/20 text-orcave-error;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-orcave-text mb-4;
+  }
+
+  .subsection-title {
+    @apply text-sm font-medium text-orcave-muted mb-3 uppercase tracking-wider;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-in {
+    animation: fadeIn 0.2s ease-out, slideUp 0.3s ease-out;
+  }
+
+  .glass {
+    @apply bg-orcave-surface/80 backdrop-blur-sm border border-orcave-border/50;
+  }
+}
+
+/* Diagnostic panel styles */
+.diagnostic-panel {
+  @apply card-elevated p-4 font-mono text-sm;
+}
+
+.diagnostic-log {
+  @apply diagnostic-panel max-h-96 overflow-y-auto;
+}
+
+.diagnostic-entry {
+  @apply py-1 border-b border-orcave-border/50 last:border-0;
+}
+
+.diagnostic-entry-error {
+  @apply text-orcave-error;
+}
+
+.diagnostic-entry-warning {
+  @apply text-orcave-warning;
+}
+
+.diagnostic-entry-success {
+  @apply text-orcave-success;
+}
+
+.diagnostic-entry-info {
+  @apply text-orcave-muted;
+}

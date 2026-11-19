@@ -1,0 +1,45 @@
+[package]
+name = "orcave-catalogue"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Orcave catalogue - YouTube Music browsing and search"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+reqwest = { workspace = true }
+url = { workspace = true }
+rand = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+bytes = { workspace = true }
+mime = { workspace = true }
+mime_guess = { workspace = true }
+percent-encoding = { workspace = true }
+indexmap = { workspace = true }
+smallvec = { workspace = true }
+ahash = { workspace = true }
+ulid = { workspace = true }
+once_cell = { workspace = true }
+
+orcave-core = { path = "../orcave-core" }
+orcave-auth = { path = "../orcave-auth" }
+orcave-settings = { path = "../orcave-settings" }
+tauri = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+mockall = { workspace = true }
+wiremock = { workspace = true }

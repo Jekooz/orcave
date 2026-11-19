@@ -1,0 +1,29 @@
+[package]
+name = "orcave-session"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Orcave YouTube Music browser-session connection - reuses existing browser session, no OAuth"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+reqwest = { workspace = true }
+url = { workspace = true }
+chrono = { workspace = true }
+zeroize = { workspace = true }
+zeroize_derive = { workspace = true }
+
+orcave-core = { path = "../orcave-core" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+mockall = { workspace = true }
+wiremock = { workspace = true }
