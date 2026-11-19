@@ -1,0 +1,38 @@
+[package]
+name = "orcave-queue"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Orcave queue - Playback queue management with history, repeat, shuffle"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rand = { workspace = true }
+tauri = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+indexmap = { workspace = true }
+smallvec = { workspace = true }
+ahash = { workspace = true }
+ulid = { workspace = true }
+once_cell = { workspace = true }
+
+orcave-core = { path = "../orcave-core" }
+orcave-audio = { path = "../orcave-audio" }
+orcave-catalogue = { path = "../orcave-catalogue" }
+orcave-settings = { path = "../orcave-settings" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+mockall = { workspace = true }

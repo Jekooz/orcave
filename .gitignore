@@ -19,7 +19,13 @@ YTM Client UI.html
 # ---- Regenerable build artifacts (never commit these again) ---------------
 build/
 dist/
+target/
+node_modules/
+gen/
 *.zip
+*.o
+*.rlib
+*.pdb
 *.exe
 proof/*.txt
 proof/golden_review/

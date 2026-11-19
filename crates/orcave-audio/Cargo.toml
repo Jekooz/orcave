@@ -1,0 +1,53 @@
+[package]
+name = "orcave-audio"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Orcave audio engine - gapless playback, crossfade, equalizer, format support"
+
+[dependencies]
+rand = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+percent-encoding = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+bytes = { workspace = true }
+rodio = { workspace = true }
+cpal = { workspace = true }
+symphonia = { workspace = true }
+rubato = { workspace = true }
+hound = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+indexmap = { workspace = true }
+smallvec = { workspace = true }
+ahash = { workspace = true }
+once_cell = { workspace = true }
+tauri = { workspace = true }
+reqwest = { workspace = true, features = ["stream"] }
+windows = { workspace = true, features = ["Media"] }
+
+orcave-core = { path = "../orcave-core" }
+orcave-settings = { path = "../orcave-settings" }
+orcave-windows = { path = "../orcave-windows" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+mockall = { workspace = true }
+
+# Audio output proof: exercise the real rodio/cpal output path against the
+# default Windows output device. Not part of the library API.
+cpal = { workspace = true }
+rodio = { workspace = true }
+symphonia = { workspace = true }
+tokio = { workspace = true }

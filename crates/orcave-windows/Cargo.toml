@@ -1,0 +1,40 @@
+[package]
+name = "orcave-windows"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Orcave Windows integration - System media controls, Credential Manager, power management"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+directories = { workspace = true }
+notify = { workspace = true }
+windows = { workspace = true, features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_System_Power", "Win32_System_Registry", "Win32_System_Threading", "Media", "Media_Control", "Media_Playback", "Foundation"] }
+windows-core = { workspace = true }
+winreg = { workspace = true }
+tauri = { workspace = true }
+tauri-plugin-store = { workspace = true }
+once_cell = { workspace = true }
+rand = { workspace = true }
+blake3 = { workspace = true }
+zeroize = { workspace = true }
+
+orcave-core = { path = "../orcave-core" }
+orcave-settings = { path = "../orcave-settings" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+mockall = { workspace = true }

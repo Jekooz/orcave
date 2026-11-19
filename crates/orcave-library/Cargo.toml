@@ -1,0 +1,49 @@
+[package]
+name = "orcave-library"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Orcave local music library - folder scanning, metadata extraction, artwork, dedup"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+bytes = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+indexmap = { workspace = true }
+smallvec = { workspace = true }
+ahash = { workspace = true }
+once_cell = { workspace = true }
+ulid = { workspace = true }
+blake3 = { workspace = true }
+symphonia = { workspace = true }
+image = { workspace = true }
+walkdir = { workspace = true }
+notify = { workspace = true }
+directories = { workspace = true }
+tauri = { workspace = true }
+tauri-plugin-dialog = { workspace = true }
+tauri-plugin-fs = { workspace = true }
+
+orcave-core = { path = "../orcave-core" }
+orcave-settings = { path = "../orcave-settings" }
+orcave-audio = { path = "../orcave-audio" }
+orcave-catalogue = { path = "../orcave-catalogue" }
+orcave-queue = { path = "../orcave-queue" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+rstest = { workspace = true }
+tokio-test = { workspace = true }
+mockall = { workspace = true }
+tempfile = "3.10"
