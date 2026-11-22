@@ -5,11 +5,9 @@
 
 name: Dart
 
+# Legacy Flutter/Dart pipeline: opt-in only while Windows Tauri is the active target.
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
