@@ -2,8 +2,9 @@ name: Orcave Windows Verification
 
 on:
   push:
-    branches:
-      - ci/orcave-windows-baseline
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
