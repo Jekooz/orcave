@@ -3005,8 +3005,9 @@ mod tests {
         assert!(result.is_err(), "missing file should fail to open");
     }
 
-    /// Unit test: set_output_device updates the output_device field.
+    /// Hardware integration test: requires an actual audio output device.
     #[test]
+    #[ignore = "Requires a Windows machine with an audio output device"]
     fn test_set_output_device_field() {
         // Verify that cpal device enumeration works and we can find devices.
         let host = cpal::default_host();
