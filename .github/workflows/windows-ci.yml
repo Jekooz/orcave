@@ -1,0 +1,143 @@
+name: Windows CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-ci:
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    defaults:
+      run:
+        shell: pwsh
+
+    env:
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+          components: rustfmt, clippy
+
+      - name: Set up Node.js
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
+        with:
+          node-version: "20.x"
+          cache: "npm"
+          cache-dependency-path: frontend-tauri/package-lock.json
+
+      - name: Install frontend dependencies (lockfile-based)
+        working-directory: frontend-tauri
+        run: npm ci
+
+      - name: Install tauri-cli CLI
+        run: cargo install tauri-cli --version 2.12.4 --locked
+
+      - name: Cargo formatting verification
+        run: cargo fmt --all -- --check
+
+      - name: Cargo check (workspace)
+        run: cargo check --workspace --all-targets --locked
+
+      - name: Cargo clippy (workspace)
+        run: cargo clippy --workspace --all-targets --locked
+
+      - name: Cargo tests (workspace)
+        run: cargo test --workspace --locked
+
+      - name: TypeScript verification
+        working-directory: frontend-tauri
+        run: npx tsc --noEmit
+
+      - name: Frontend unit tests (Vitest)
+        working-directory: frontend-tauri
+        run: npm test -- --run
+
+      - name: Frontend production build
+        working-directory: frontend-tauri
+        run: npm run build
+
+      - name: Native Windows release compilation
+        working-directory: crates/orcave-tauri
+        run: cargo build --release -p orcave-tauri --locked
+
+      - name: Tauri installer generation (Windows)
+        working-directory: crates/orcave-tauri
+        run: |
+          New-Item -ItemType Directory -Force "$env:GITHUB_WORKSPACE/test-logs" | Out-Null
+          cargo tauri build --release --no-sign --bundles nsis 2>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE/test-logs/tauri-build.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Record executable SHA256
+        id: exe-hash
+        run: |
+          $exe = "target/release/orcave-tauri.exe"
+          if (-not (Test-Path $exe)) { throw "Release exe not found: $exe" }
+          $hash = Get-FileHash -Path $exe -Algorithm SHA256 | Select-Object -ExpandProperty Hash
+          echo "hash=$hash" >> $env:GITHUB_OUTPUT
+          echo "Executable SHA256: $hash"
+
+      - name: Record installer SHA256
+        id: installer-hash
+        run: |
+          $bundleDir = "target/release/bundle"
+          $installers = @(
+            Get-ChildItem -Path $bundleDir -Recurse -File |
+              Where-Object { $_.Extension -in @(".exe", ".msi") }
+          )
+          if ($installers.Count -eq 0) {
+            throw "No installer bundle found in $bundleDir"
+          }
+          $installer = $installers | Select-Object -First 1
+          $hash = Get-FileHash -Path $installer.FullName -Algorithm SHA256 | Select-Object -ExpandProperty Hash
+          echo "hash=$hash" >> $env:GITHUB_OUTPUT
+          echo "Installer path: $($installer.FullName)"
+          echo "Installer SHA256: $hash"
+
+      - name: Write SHA256SUMS.txt
+        run: |
+          $staging = Join-Path $env:GITHUB_WORKSPACE "ci-artifacts"
+          New-Item -ItemType Directory -Force -Path $staging | Out-Null
+          $exe = Join-Path $env:GITHUB_WORKSPACE "target/release/orcave-tauri.exe"
+          $installer = (Get-ChildItem -Path "target/release/bundle" -Recurse -File |
+            Where-Object { $_.Extension -in @(".exe", ".msi") } | Select-Object -First 1).FullName
+          if (-not (Test-Path $exe)) { throw "Release exe not found: $exe" }
+          if (-not $installer) { throw "No installer bundle found" }
+          $exeHash = (Get-FileHash -Path $exe -Algorithm SHA256).Hash
+          $instHash = (Get-FileHash -Path $installer -Algorithm SHA256).Hash
+          "$exeHash  $(Split-Path $exe -Leaf)" | Out-File -FilePath (Join-Path $staging "SHA256SUMS.txt") -Encoding utf8
+          "$instHash  $(Split-Path $installer -Leaf)" | Out-File -FilePath (Join-Path $staging "SHA256SUMS.txt") -Encoding utf8 -Append
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: orcave-windows-build-${{ github.run_id }}
+          path: |
+            target/release/orcave-tauri.exe
+            target/release/bundle/**/*.exe
+            target/release/bundle/**/*.msi
+            ci-artifacts/SHA256SUMS.txt
+          retention-days: 14
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: orcave-windows-test-logs-${{ github.run_id }}
+          path: |
+            target/debug/*.xml
+            frontend-tauri/coverage/**
+            test-logs/tauri-build.log
+          retention-days: 14
