@@ -40,15 +40,8 @@
     "windows": {
       "nsis": {
         "installerIcon": "icons/icon.ico",
-        "licenseFile": "",
-        "headerImage": "",
-        "welcomeImage": "",
-        "strings": {
-          "nameAndVersion": "Orcave 2.0 Alpha",
-          "installationDirectory": "Orcave",
-          "licenseHeading": "License Agreement",
-          "licenseSubHeading": "Please read the following license agreement carefully."
-        }
+        "compression": "lzma",
+        "startMenuFolder": "Orcave"
       }
     }
   },
