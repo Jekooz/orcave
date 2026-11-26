@@ -45,6 +45,9 @@ jobs:
       - name: Install tauri-cli CLI
         run: cargo install tauri-cli --version 2.12.4 --locked
 
+      - name: Cargo format code
+        run: cargo fmt --all
+
       - name: Cargo formatting verification
         run: cargo fmt --all -- --check
 
