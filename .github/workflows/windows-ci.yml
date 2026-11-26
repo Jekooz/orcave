@@ -46,7 +46,13 @@ jobs:
         run: cargo install tauri-cli --version 2.12.4 --locked
 
       - name: Cargo format code
-        run: cargo fmt --all
+        run: |
+          echo "=== Running cargo fmt --all ==="
+          cargo fmt --all
+          echo "=== cargo fmt --all completed ==="
+          echo "=== Checking if any files need formatting ==="
+          cargo fmt --all -- --check
+          echo "=== Formatting check passed ==="
 
       - name: Cargo formatting verification
         run: cargo fmt --all -- --check
