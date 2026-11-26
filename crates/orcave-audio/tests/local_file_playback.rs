@@ -61,6 +61,7 @@ fn rt_block_on<F: std::future::Future>(f: F) -> F::Output {
 }
 
 #[test]
+#[ignore = "requires audio output device (hardware-dependent)"]
 fn test_device_enumeration() {
     let host = cpal::default_host();
     let devices: Vec<_> = host
