@@ -45,6 +45,12 @@ jobs:
       - name: Install tauri-cli CLI
         run: cargo install tauri-cli --version 2.12.4 --locked
 
+      - name: Prepare frontendDist for Tauri proc macro validation
+        run: |
+          $distPath = "frontend-tauri/dist"
+          New-Item -ItemType Directory -Force -Path $distPath | Out-Null
+          "<!DOCTYPE html><html><head><title>Orcave</title></head><body><div id='root'></div></body></html>" | Out-File -FilePath (Join-Path $distPath "index.html") -Encoding utf8
+
       - name: Cargo format code
         run: |
           echo "=== Running cargo fmt --all ==="
