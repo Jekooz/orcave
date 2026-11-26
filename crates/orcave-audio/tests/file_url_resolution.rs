@@ -119,7 +119,9 @@ fn test_file_url_percent_encoded_space_decodes() {
     // Drive letter may differ from this machine's temp drive; rebuild URL with
     // the real drive but encoded segments.
     let real = url_from_path(&path); // file:///<drive>:/.../encoded dir/song file.wav
-    let encoded = real.replace("encoded dir", "encoded%20dir").replace("song file.wav", "song%20file.wav");
+    let encoded = real
+        .replace("encoded dir", "encoded%20dir")
+        .replace("song file.wav", "song%20file.wav");
     let resolved = AudioEngine::file_url_to_path(&encoded).expect("encoded URL must resolve");
     assert_eq!(resolved, path, "%20 must decode to literal space");
 
@@ -138,11 +140,13 @@ fn test_file_url_unicode_decodes() {
     fs::write(&path, &wav).unwrap();
 
     let url_literal = url_from_path(&path);
-    let resolved = AudioEngine::file_url_to_path(&url_literal).expect("literal Unicode URL must resolve");
+    let resolved =
+        AudioEngine::file_url_to_path(&url_literal).expect("literal Unicode URL must resolve");
     assert_eq!(resolved, path);
 
     let url_encoded = url_literal.replace("café.wav", "caf%C3%A9.wav");
-    let resolved_enc = AudioEngine::file_url_to_path(&url_encoded).expect("percent-encoded Unicode URL must resolve");
+    let resolved_enc = AudioEngine::file_url_to_path(&url_encoded)
+        .expect("percent-encoded Unicode URL must resolve");
     assert_eq!(resolved_enc, path, "%C3%A9 must decode to é");
 
     let (frames, _, _, _) = decode_path(&resolved);
@@ -156,11 +160,7 @@ fn test_file_url_unicode_decodes() {
 #[test]
 fn test_file_url_real_mp3_with_space_decodes() {
     let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/audio/test_440hz_5s.mp3");
-    assert!(
-        fixture.exists(),
-        "MP3 fixture missing at {:?}",
-        fixture
-    );
+    assert!(fixture.exists(), "MP3 fixture missing at {:?}", fixture);
 
     let dir = setup_dir("My Music");
     let path = dir.join("song file.mp3");
@@ -188,7 +188,8 @@ fn test_file_url_missing_file_fails_to_open() {
     assert!(!path.exists());
 
     let url = url_from_path(&path);
-    let resolved = AudioEngine::file_url_to_path(&url).expect("URL must still resolve syntactically");
+    let resolved =
+        AudioEngine::file_url_to_path(&url).expect("URL must still resolve syntactically");
     let result = File::open(&resolved);
     assert!(
         result.is_err(),

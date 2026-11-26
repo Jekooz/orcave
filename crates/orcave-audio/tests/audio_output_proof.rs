@@ -13,11 +13,11 @@
 //! Run: cargo test -p orcave-audio --test audio_output_proof -- --nocapture --test-threads=1
 
 use cpal::traits::{DeviceTrait, HostTrait};
-use std::sync::atomic::AtomicBool;
 use hound;
 use orcave_audio::{AudioEngine, LocalFileSource};
 use std::fs::File;
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -25,7 +25,13 @@ use symphonia::core::io::MediaSource;
 
 /// Write a controlled low-volume synthetic WAV fixture via hound (valid WAV,
 /// symphonia-decodable). Returns the WAV byte count and the temp path.
-fn write_low_volume_wav(path: &PathBuf, freq: f32, duration_ms: u32, sample_rate: u32, volume: f32) -> usize {
+fn write_low_volume_wav(
+    path: &PathBuf,
+    freq: f32,
+    duration_ms: u32,
+    sample_rate: u32,
+    volume: f32,
+) -> usize {
     let spec = hound::WavSpec {
         channels: 2,
         sample_rate,
@@ -41,7 +47,9 @@ fn write_low_volume_wav(path: &PathBuf, freq: f32, duration_ms: u32, sample_rate
         let s = (freq * 2.0 * std::f32::consts::PI * t).sin();
         let sample = (s * amp as f32) as i16;
         for _ in 0..2 {
-            writer.write_sample(sample).expect("hound write_sample failed");
+            writer
+                .write_sample(sample)
+                .expect("hound write_sample failed");
         }
     }
     writer.finalize().expect("hound finalize failed");
@@ -68,14 +76,17 @@ fn proof_pcm_reaches_windows_output() {
         .default_output_device()
         .expect("cpal default_output_device() returned None");
     let default_name = default.name().unwrap_or_default();
-    println!("PROOF stage 2: cpal output devices enumerated = {}", devices.len());
-    for d in &devices {
-        println!("PROOF stage 2:   output device = {:?}", d.name().unwrap_or_default());
-    }
     println!(
-        "PROOF stage 2: default_output_device = {:?}",
-        default_name
+        "PROOF stage 2: cpal output devices enumerated = {}",
+        devices.len()
     );
+    for d in &devices {
+        println!(
+            "PROOF stage 2:   output device = {:?}",
+            d.name().unwrap_or_default()
+        );
+    }
+    println!("PROOF stage 2: default_output_device = {:?}", default_name);
     assert!(!devices.is_empty(), "no output devices enumerated");
     assert!(
         !default_name.is_empty(),
@@ -85,8 +96,8 @@ fn proof_pcm_reaches_windows_output() {
 
     // ---- Stage 11: controlled low-volume synthetic WAV fixture ----
     let sample_rate: u32 = 48000;
-    let path: PathBuf = std::env::temp_dir()
-        .join(format!("orcave_proof_lowvol_{}.wav", std::process::id()));
+    let path: PathBuf =
+        std::env::temp_dir().join(format!("orcave_proof_lowvol_{}.wav", std::process::id()));
     let wav_len = write_low_volume_wav(&path, 440.0, 400, sample_rate, 0.08); // quiet 440 Hz tone
     println!("PROOF stage 11: wrote low-volume WAV fixture, {wav_len} bytes");
 
@@ -120,8 +131,8 @@ fn proof_pcm_reaches_windows_output() {
     // ---- Stages 3, 5, 6: rodio stream + sink creation succeeds ----
     let (stream, handle) = rodio::OutputStream::try_default()
         .expect("rodio OutputStream::try_default failed — no output stream opened");
-    let sink = rodio::Sink::try_new(&handle)
-        .expect("rodio Sink::try_new failed — sink not created");
+    let sink =
+        rodio::Sink::try_new(&handle).expect("rodio Sink::try_new failed — sink not created");
     println!("PROOF stage 3/5: rodio OutputStream + Sink created on default device");
     assert!(sink.empty(), "fresh sink should be empty before append");
 
@@ -193,5 +204,8 @@ fn proof_pcm_reaches_windows_output() {
     let _ = stream; // keep stream alive until end of scope
     let _ = std::fs::remove_file(&path);
 
-    println!("PROOF CONCLUSION: nonzero PCM reached Windows output device {:?}", default_name);
+    println!(
+        "PROOF CONCLUSION: nonzero PCM reached Windows output device {:?}",
+        default_name
+    );
 }

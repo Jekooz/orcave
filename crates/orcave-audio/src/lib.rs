@@ -89,10 +89,7 @@ mod duration_ms {
                     .get("secs")
                     .and_then(Value::as_u64)
                     .ok_or_else(|| de::Error::missing_field("secs"))?;
-                let nanos = map
-                    .get("nanos")
-                    .and_then(Value::as_u64)
-                    .unwrap_or(0);
+                let nanos = map.get("nanos").and_then(Value::as_u64).unwrap_or(0);
                 let ms = secs
                     .checked_mul(1_000)
                     .and_then(|s| s.checked_add(nanos / 1_000_000))
@@ -1440,10 +1437,7 @@ impl AudioEngine {
         while i < path_str.len() {
             if path_str.as_bytes()[i] == b'%' {
                 let rest = &path_str.as_bytes()[i + 1..];
-                if rest.len() < 2
-                    || !rest[0].is_ascii_hexdigit()
-                    || !rest[1].is_ascii_hexdigit()
-                {
+                if rest.len() < 2 || !rest[0].is_ascii_hexdigit() || !rest[1].is_ascii_hexdigit() {
                     return Err(AudioError::Stream(format!(
                         "invalid percent-encoding in file URL: stray '%' at byte {i}"
                     )));
@@ -1608,7 +1602,9 @@ impl AudioEngine {
         match reply_rx.await {
             Ok(Ok(())) => Ok(()),
             Ok(Err(e)) => Err(AudioError::OutputDevice(e).into()),
-            Err(_) => Err(AudioError::OutputDevice("output thread dropped play reply".to_string()).into()),
+            Err(_) => {
+                Err(AudioError::OutputDevice("output thread dropped play reply".to_string()).into())
+            }
         }
     }
 
@@ -1636,12 +1632,13 @@ impl AudioEngine {
                         let Ok(pos) = position.await else { break };
                         *engine.position.write().await = pos;
 
-                        let track = engine
-                            .current_track
-                            .read()
-                            .await
-                            .as_ref()
-                            .map(|track| (track.handle.clone(), track.duration, has_reached_decoded_end(track, pos)));
+                        let track = engine.current_track.read().await.as_ref().map(|track| {
+                            (
+                                track.handle.clone(),
+                                track.duration,
+                                has_reached_decoded_end(track, pos),
+                            )
+                        });
                         if let Some((handle, duration, ended)) = track {
                             engine.emit(AudioEvent::PositionChanged {
                                 position: pos,
@@ -2905,9 +2902,11 @@ mod tests {
             PathBuf::from("C:/Users/Me/Music/song.mp3"),
             "stripped file:/// URL must yield C:/path on Windows"
         );
-        assert!(!AudioEngine::file_url_to_path("file:///C:/Users/Me/Music/song.mp3")
-            .unwrap()
-            .starts_with("/"));
+        assert!(
+            !AudioEngine::file_url_to_path("file:///C:/Users/Me/Music/song.mp3")
+                .unwrap()
+                .starts_with("/")
+        );
     }
 
     /// Regression test for ORCAVE-ALPHA-R3P: `%20` (space) and other
@@ -2938,7 +2937,8 @@ mod tests {
             "%C3%A9 must decode to é"
         );
         assert_eq!(
-            AudioEngine::file_url_to_path("file:///C:/Users/Me/Music/%E3%81%82%E3%82%82.mp3").unwrap(),
+            AudioEngine::file_url_to_path("file:///C:/Users/Me/Music/%E3%81%82%E3%82%82.mp3")
+                .unwrap(),
             PathBuf::from("C:/Users/Me/Music/あも.mp3"),
             "%E3%81%82%E3%82%82 must decode to あも (U+3042 U+3082)"
         );
@@ -2979,8 +2979,8 @@ mod tests {
     /// silently passed through to `File::open`.
     #[test]
     fn test_file_url_to_path_invalid_percent_encoding() {
-        let err = AudioEngine::file_url_to_path("file:///C:/Users/Me/Music/%ZZ/song.mp3")
-            .unwrap_err();
+        let err =
+            AudioEngine::file_url_to_path("file:///C:/Users/Me/Music/%ZZ/song.mp3").unwrap_err();
         assert!(
             matches!(err, AudioError::Stream(_)),
             "invalid percent-encoding must yield AudioError::Stream, got {err:?}"
