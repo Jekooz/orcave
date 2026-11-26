@@ -65,6 +65,7 @@ fn rms_of(frames: &[f32]) -> f64 {
 }
 
 #[test]
+#[ignore = "requires audio output device (hardware-dependent)"]
 fn proof_pcm_reaches_windows_output() {
     // ---- Stage 2: actual output-device identity (cpal) ----
     let host = cpal::default_host();
