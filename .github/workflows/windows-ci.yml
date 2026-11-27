@@ -92,7 +92,7 @@ jobs:
         working-directory: crates/orcave-tauri
         run: |
           New-Item -ItemType Directory -Force "$env:GITHUB_WORKSPACE/test-logs" | Out-Null
-          cargo tauri build --no-sign --bundles nsis 2>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE/test-logs/tauri-build.log"
+          cargo tauri build -- --release --no-sign --bundles nsis 2>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE/test-logs/tauri-build.log"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Record executable SHA256
