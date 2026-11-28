@@ -1109,12 +1109,6 @@ impl Default for NativeBridge {
 // Manages the lifecycle of the Python FastAPI sidecar that handles
 // YouTube Music authentication and catalogue operations.
 
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use tokio::time::{Duration, sleep};
-
 /// Python sidecar manager - handles launching and communicating with the
 /// Python FastAPI backend for YouTube Music authentication.
 pub struct PythonSidecarManager {
