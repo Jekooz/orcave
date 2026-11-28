@@ -98,14 +98,17 @@ jobs:
       - name: Cargo formatting verification
         run: cargo fmt --all -- --check
 
+      - name: Update Cargo.lock
+        run: cargo update --workspace
+
       - name: Cargo check (workspace)
-        run: cargo check --workspace --all-targets --locked
+        run: cargo check --workspace --all-targets
 
       - name: Cargo clippy (workspace)
-        run: cargo clippy --workspace --all-targets --locked
+        run: cargo clippy --workspace --all-targets
 
       - name: Cargo tests (workspace)
-        run: cargo test --workspace --locked
+        run: cargo test --workspace
 
       - name: TypeScript verification
         working-directory: frontend-tauri
@@ -121,7 +124,7 @@ jobs:
 
       - name: Native Windows release compilation
         working-directory: crates/orcave-tauri
-        run: cargo build --release -p orcave-tauri --locked
+        run: cargo build --release -p orcave-tauri
 
       - name: Tauri installer generation (Windows)
         working-directory: crates/orcave-tauri
