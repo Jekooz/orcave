@@ -44,7 +44,7 @@ from services.browser_cookies import (
     sign_in_plan,
 )
 
-logger = logging.getLogger("ytmusic-backend")
+logger = logging.getLogger("orcave-backend")
 
 MUSIC_URL = "https://music.youtube.com"
 

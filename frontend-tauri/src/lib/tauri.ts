@@ -37,6 +37,17 @@ export interface NativeSessionStatus {
   handle: string | null;
 }
 
+// Browser-based authentication (Python sidecar)
+export interface BrowserAuthStatus {
+  state: 'idle' | 'waiting' | 'success' | 'failed' | 'cancelled' | 'error';
+  browser: string;
+  error?: string;
+}
+
+export interface BrowserInfo {
+  browser: string;
+}
+
 // Catalogue types
 export interface MediaItem {
   id: string;

@@ -43,7 +43,10 @@
         "compression": "lzma",
         "startMenuFolder": "Orcave"
       }
-    }
+    },
+    "externalBin": [
+      "backend/main.exe"
+    ]
   },
   "plugins": {
     "store": null,

@@ -29,6 +29,9 @@ once_cell = { workspace = true }
 rand = { workspace = true }
 blake3 = { workspace = true }
 zeroize = { workspace = true }
+reqwest = { workspace = true }
+urlencoding = "2.1"
+dirs = "5.0"
 
 orcave-core = { path = "../orcave-core" }
 orcave-settings = { path = "../orcave-settings" }

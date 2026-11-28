@@ -52,7 +52,7 @@ import tempfile
 import time
 from ctypes import wintypes
 
-logger = logging.getLogger("ytmusic-backend")
+logger = logging.getLogger("orcave-backend")
 
 # Only cookies for these hosts are ever looked at; a browser's cookie store is
 # not ours to rummage through, and nothing outside the two YouTube Music needs
@@ -915,14 +915,14 @@ def browser_profile_dir():
     Beside the app's other per-install state, not inside the install folder, so
     it is per-user and survives an upgrade. Sign-out removes it.
     """
-    sonore = os.path.join(
+    orcave = os.path.join(
         os.environ.get(
             "LOCALAPPDATA",
             os.path.join(os.path.expanduser("~"), "AppData", "Local"),
         ),
-        "Sonore",
+        "Orcave",
     )
-    return os.path.join(sonore, "sign-in-browser")
+    return os.path.join(orcave, "sign-in-browser")
 
 
 def remove_browser_profile():

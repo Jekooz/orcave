@@ -44,7 +44,7 @@ import logging
 import threading
 import time
 
-logger = logging.getLogger("ytmusic-backend")
+logger = logging.getLogger("orcave-backend")
 
 RADIO_CACHE_TTL = 300      # seconds — radio changes each call, cache briefly
 RELATED_CACHE_TTL = 900

@@ -42,7 +42,7 @@ from ytmusicapi import YTMusic
 
 logger = logging.getLogger("ytmusic-backend")
 
-YTM_SERVICE_NAME = "ytmusic_client"
+YTM_SERVICE_NAME = "Orcave"
 
 # Origin used for the SAPISIDHASH authorization header. Must match the origin the
 # cookies belong to (music.youtube.com) or Google rejects the request.
@@ -102,20 +102,20 @@ _DPAPI_AVAILABLE = hasattr(ctypes, "windll")
 # File path for the encrypted auth headers blob.
 _APP_DATA_DIR = os.path.join(
     os.environ.get("LOCALAPPDATA", os.path.join(os.path.expanduser("~"), "AppData", "Local")),
-    "ytmusic_client",
+    "Orcave",
 )
 _AUTH_FILE = os.path.join(_APP_DATA_DIR, "auth_headers.dat")
 
 # Per-install sidecar state: the API token every local caller must send,
 # plus the small state file the update checker and the port publisher share.
-# %LOCALAPPDATA%\Sonore\ lives beside the user, not beside the app, so an
+# %LOCALAPPDATA%\Orcave\ lives beside the user, not beside the app, so an
 # uninstall leaves it and an install for one account cannot read another's.
-_SONORE_DIR = os.path.join(
+_ORCAVE_DIR = os.path.join(
     os.environ.get("LOCALAPPDATA", os.path.join(os.path.expanduser("~"), "AppData", "Local")),
-    "Sonore",
+    "Orcave",
 )
-INSTALL_TOKEN_FILE = os.path.join(_SONORE_DIR, "install_token.dat")
-UPDATE_STATE_FILE = os.path.join(_SONORE_DIR, "update_state.json")
+INSTALL_TOKEN_FILE = os.path.join(_ORCAVE_DIR, "install_token.dat")
+UPDATE_STATE_FILE = os.path.join(_ORCAVE_DIR, "update_state.json")
 
 
 class _DATA_BLOB(ctypes.Structure):
@@ -139,7 +139,7 @@ def _dpapi_encrypt(data: bytes) -> bytes:
 
     success = ctypes.windll.crypt32.CryptProtectData(
         ctypes.byref(blob_in),
-        "ytmusic_client auth headers",
+        "Orcave auth headers",
         None, None, None, 0,
         ctypes.byref(blob_out),
     )

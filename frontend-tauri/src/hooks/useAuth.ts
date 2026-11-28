@@ -23,10 +23,22 @@ function classifyStatus(value: NativeSessionStatus): NativeStatus {
   return 'error'
 }
 
+// Browser auth status from Python sidecar
+export interface BrowserAuthStatus {
+  state: 'idle' | 'waiting' | 'success' | 'failed' | 'cancelled' | 'error'
+  browser: string
+  error?: string
+}
+
+export interface BrowserInfo {
+  browser: string
+}
+
 export function useAuth(initialize = true) {
   const { loading, setState, setUser, setLoading } = useAuthStore()
   const [nativeStatus, setNativeStatus] = useState<NativeStatus>('unknown')
   const [actionError, setActionError] = useState(false)
+  const [browserAuth, setBrowserAuth] = useState<BrowserAuthStatus>({ state: 'idle', browser: '' })
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -43,11 +55,58 @@ export function useAuth(initialize = true) {
     }
   }, [setState, setUser])
 
-  useEffect(() => {
-    if (!initialize) return
-    setLoading(true)
-    void refreshStatus().finally(() => setLoading(false))
-  }, [initialize, refreshStatus, setLoading])
+  // Browser-based authentication (Python sidecar)
+  const startBrowserAuth = useCallback(async (openBrowser = true): Promise<BrowserAuthStatus> => {
+    try {
+      const result = await invoke<BrowserAuthStatus>('auth_browser_start', { open_browser: openBrowser })
+      setBrowserAuth(result)
+      return result
+    } catch (error) {
+      setBrowserAuth({ state: 'error', browser: '', error: String(error) })
+      throw error
+    }
+  }, [])
+
+  const checkBrowserAuthStatus = useCallback(async (): Promise<BrowserAuthStatus> => {
+    try {
+      const result = await invoke<BrowserAuthStatus>('auth_browser_status')
+      setBrowserAuth(result)
+      return result
+    } catch (error) {
+      setBrowserAuth({ state: 'error', browser: '', error: String(error) })
+      throw error
+    }
+  }, [])
+
+  const browserInfo = useCallback(async (): Promise<BrowserInfo> => {
+    return invoke<BrowserInfo>('auth_browser_info')
+  }, [])
+
+  const finishBrowserAuth = useCallback(async (): Promise<BrowserAuthStatus> => {
+    try {
+      const result = await invoke<BrowserAuthStatus>('auth_browser_finish')
+      setBrowserAuth(result)
+      return result
+    } catch (error) {
+      setBrowserAuth({ state: 'error', browser: '', error: String(error) })
+      throw error
+    }
+  }, [])
+
+  const cancelBrowserAuth = useCallback(async (): Promise<BrowserAuthStatus> => {
+    try {
+      const result = await invoke<BrowserAuthStatus>('auth_browser_cancel')
+      setBrowserAuth(result)
+      return result
+    } catch (error) {
+      setBrowserAuth({ state: 'error', browser: '', error: String(error) })
+      throw error
+    }
+  }, [])
+
+  const handoffAuth = useCallback(async (cookies: Record<string, string>, headers?: Record<string, string>) => {
+    return invoke('auth_handoff', { cookies, headers })
+  }, [])
 
   const signOut = useCallback(async () => {
     if (nativeStatus !== 'local_session') return
@@ -59,14 +118,29 @@ export function useAuth(initialize = true) {
     }
   }, [nativeStatus, refreshStatus])
 
+  // Initialize on mount
+  useEffect(() => {
+    if (!initialize) return
+    setLoading(true)
+    void refreshStatus().finally(() => setLoading(false))
+  }, [initialize, refreshStatus, setLoading])
+
   return {
     loading,
     nativeStatus,
     actionError,
+    browserAuth,
     // Provider access is unverified until Rust exposes a separate validated
     // provider-session contract. This must not unlock protected routes.
     isAuthenticated: false,
     refreshStatus,
     signOut,
+    // Browser auth functions
+    startBrowserAuth,
+    checkBrowserAuthStatus,
+    browserInfo,
+    finishBrowserAuth,
+    cancelBrowserAuth,
+    handoffAuth,
   }
 }

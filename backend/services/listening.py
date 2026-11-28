@@ -12,7 +12,7 @@ Design constraints (from the task):
     Session cookies / auth headers never reach this file.
   * No cloud: the file lives next to the app's other local data.
 
-Storage layout (%LOCALAPPDATA%/ytmusic_client/listening_history.json):
+Storage layout (%LOCALAPPDATA%/Orcave/listening_history.json):
 
     {
       "version": 1,
@@ -35,7 +35,7 @@ import os
 import threading
 import time
 
-logger = logging.getLogger("ytmusic-backend")
+logger = logging.getLogger("orcave-backend")
 
 MAX_EVENTS = 1000
 MAX_RECENT = 10          # distinct recent videos handed to the ranker
@@ -52,7 +52,7 @@ def _default_path() -> str:
         "LOCALAPPDATA",
         os.path.join(os.path.expanduser("~"), "AppData", "Local"),
     )
-    return os.path.join(base, "ytmusic_client", "listening_history.json")
+    return os.path.join(base, "Orcave", "listening_history.json")
 
 
 class ListeningStore:

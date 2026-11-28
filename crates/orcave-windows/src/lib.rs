@@ -7,8 +7,11 @@
 //! - Tauri plugin-store wrapper for settings persistence
 //! - Machine identification
 //! - File associations and protocol handlers
+//! - Python sidecar management for YouTube Music authentication
 
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
@@ -18,11 +21,15 @@ use anyhow::Result;
 use parking_lot::{Mutex as ParkingMutex, RwLock};
 use rand::rngs::OsRng;
 use rand::RngCore;
+use reqwest;
 use serde::{Deserialize, Serialize};
 use tauri::Wry;
 use tauri_plugin_store::Store;
 use tokio::sync::{broadcast, Mutex};
-use tracing::{debug, info, instrument};
+use tokio::time::sleep;
+use tracing::{debug, info, instrument, warn, error};
+use urlencoding;
+use dirs;
 use windows::Media::Playback::MediaPlayer;
 use windows::Media::{MediaPlaybackStatus, MediaPlaybackType, SystemMediaTransportControls};
 use windows::Win32::Foundation::*;
@@ -1094,6 +1101,397 @@ impl NativeBridge {
 impl Default for NativeBridge {
     fn default() -> Self {
         Self::new(std::iter::empty::<ExtensionId>())
+    }
+}
+
+// ===== Python Sidecar Manager =====
+//
+// Manages the lifecycle of the Python FastAPI sidecar that handles
+// YouTube Music authentication and catalogue operations.
+
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use tokio::time::{Duration, sleep};
+use tracing::{info, warn, error, debug};
+
+/// Python sidecar manager - handles launching and communicating with the
+/// Python FastAPI backend for YouTube Music authentication.
+pub struct PythonSidecarManager {
+    sidecar_process: Arc<Mutex<Option<tokio::process::Child>>>,
+    sidecar_port: Arc<Mutex<Option<u16>>>,
+    base_url: Arc<Mutex<Option<String>>>,
+    client: reqwest::Client,
+    install_token: Arc<Mutex<Option<String>>>,
+}
+
+impl PythonSidecarManager {
+    /// Create a new sidecar manager
+    pub fn new() -> Result<Self> {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(30))
+            .build()?;
+
+        Ok(Self {
+            sidecar_process: Arc::new(Mutex::new(None)),
+            sidecar_port: Arc::new(Mutex::new(None)),
+            base_url: Arc::new(Mutex::new(None)),
+            client,
+            install_token: Arc::new(Mutex::new(None)),
+        })
+    }
+
+    /// Get the path to the Python sidecar main.py
+    fn sidecar_script_path() -> Result<PathBuf> {
+        // Look for backend/main.py relative to the executable
+        let exe_path = std::env::current_exe()?;
+        let exe_dir = exe_path.parent().ok_or_else(|| anyhow::anyhow!("No parent directory"))?;
+        
+        // Try multiple locations
+        let candidates = [
+            exe_dir.join("backend").join("main.py"),                    // Installed app
+            exe_dir.join("..").join("backend").join("main.py"),         // Development
+            PathBuf::from("backend/main.py"),                            // Current dir
+        ];
+
+        for candidate in &candidates {
+            if candidate.exists() {
+                return Ok(candidate.clone());
+            }
+        }
+
+        Err(anyhow::anyhow!(
+            "Python sidecar script not found. Tried: {:?}",
+            candidates
+        ))
+    }
+
+    /// Get the path to the Python executable
+    fn python_executable() -> String {
+        // Use the bundled Python or system Python
+        std::env::var("ORCAVE_PYTHON").unwrap_or_else(|_| "python".to_string())
+    }
+
+    /// Launch the Python sidecar process
+    pub async fn launch(&self) -> Result<u16> {
+        let script_path = Self::sidecar_script_path()?;
+        let python = Self::python_executable();
+
+        info!("Launching Python sidecar: {} {}", python, script_path.display());
+
+        let mut child = Command::new(&python)
+            .arg(&script_path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| anyhow::anyhow!("Failed to spawn Python sidecar: {}", e))?;
+
+        // Store the process
+        {
+            let mut process = self.sidecar_process.lock().await;
+            *process = Some(child);
+        }
+
+        // Wait for the port file to be written
+        let port = self.wait_for_port_file().await?;
+        
+        let mut base_url = self.base_url.lock().await;
+        *base_url = Some(format!("http://127.0.0.1:{}", port));
+        
+        let mut sidecar_port = self.sidecar_port.lock().await;
+        *sidecar_port = Some(port);
+
+        info!("Python sidecar launched on port {}", port);
+        Ok(port)
+    }
+
+    /// Wait for the sidecar to write its port file
+    async fn wait_for_port_file(&self) -> Result<u16> {
+        let port_file = Self::port_file_path()?;
+        let deadline = std::time::Instant::now() + Duration::from_secs(30);
+
+        while std::time::Instant::now() < deadline {
+            if port_file.exists() {
+                if let Ok(content) = std::fs::read_to_string(&port_file) {
+                    if let Ok(port) = content.trim().parse::<u16>() {
+                        return Ok(port);
+                    }
+                }
+            }
+            sleep(Duration::from_millis(500)).await;
+        }
+
+        Err(anyhow::anyhow!("Timeout waiting for sidecar port file"))
+    }
+
+    /// Get the port file path
+    fn port_file_path() -> Result<PathBuf> {
+        let local_app_data = std::env::var("LOCALAPPDATA")
+            .or_else(|_| std::env::var("APPDATA"))
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| {
+                dirs::home_dir()
+                    .map(|h| h.join("AppData").join("Local"))
+                    .unwrap_or_else(|| PathBuf::from("."))
+            });
+        
+        Ok(local_app_data.join("Orcave").join("sidecar_port.txt"))
+    }
+
+    /// Get the base URL of the sidecar
+    pub async fn base_url(&self) -> Option<String> {
+        self.base_url.lock().await.clone()
+    }
+
+    /// Get the install token for authenticated requests
+    pub async fn install_token(&self) -> Option<String> {
+        self.install_token.lock().await.clone()
+    }
+
+    /// Set the install token
+    pub async fn set_install_token(&self, token: String) {
+        let mut install_token = self.install_token.lock().await;
+        *install_token = Some(token);
+    }
+
+    /// Fetch the install token from the sidecar
+    pub async fn fetch_install_token(&self) -> Result<String> {
+        let base_url = self.base_url().await
+            .ok_or_else(|| anyhow::anyhow!("Sidecar not launched"))?;
+        
+        let response = self.client
+            .get(format!("{}/auth/install-token", base_url))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow::anyhow!("Failed to fetch install token: {}", response.status()));
+        }
+
+        let json: serde_json::Value = response.json().await?;
+        let token = json.get("install_token")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("No install token in response"))?
+            .to_string();
+
+        self.set_install_token(token.clone()).await;
+        Ok(token)
+    }
+
+    /// Get the install token, fetching if needed
+    pub async fn get_install_token(&self) -> Result<String> {
+        if let Some(token) = self.install_token().await {
+            return Ok(token);
+        }
+        self.fetch_install_token().await
+    }
+
+    /// Make an authenticated request to the sidecar
+    async fn authenticated_request<B: serde::Serialize>(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        body: Option<&B>,
+    ) -> Result<reqwest::Response> {
+        let base_url = self.base_url().await
+            .ok_or_else(|| anyhow::anyhow!("Sidecar not launched"))?;
+        
+        let token = self.get_install_token().await?;
+        
+        let mut request = self.client
+            .request(method, format!("{}{}", base_url, path))
+            .header("X-Orcave-Token", &token);
+
+        if let Some(body) = body {
+            request = request.json(body);
+        }
+
+        let response = request.send().await?;
+        Ok(response)
+    }
+
+    /// Proxy request to sidecar (for endpoints that don't need auth)
+    async fn proxy_request(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        body: Option<&serde_json::Value>,
+    ) -> Result<reqwest::Response> {
+        let base_url = self.base_url().await
+            .ok_or_else(|| anyhow::anyhow!("Sidecar not launched"))?;
+        
+        let mut request = self.client
+            .request(method, format!("{}{}", base_url, path));
+
+        if let Some(body) = body {
+            request = request.json(body);
+        }
+
+        let response = request.send().await?;
+        Ok(response)
+    }
+
+    // ===== Authentication endpoints =====
+
+    /// Start browser-based sign-in
+    pub async fn auth_browser_start(&self, open_browser: bool) -> Result<serde_json::Value> {
+        let response = self.proxy_request(
+            reqwest::Method::POST,
+            "/auth/browser/start",
+            Some(&serde_json::json!({ "open_browser": open_browser })),
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Get browser sign-in status
+    pub async fn auth_browser_status(&self) -> Result<serde_json::Value> {
+        let response = self.proxy_request(
+            reqwest::Method::GET,
+            "/auth/browser/status",
+            None,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Get browser info (which browser will be used)
+    pub async fn auth_browser_info(&self) -> Result<serde_json::Value> {
+        let response = self.proxy_request(
+            reqwest::Method::GET,
+            "/auth/browser/info",
+            None,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Finish browser sign-in (user says they've signed in)
+    pub async fn auth_browser_finish(&self) -> Result<serde_json::Value> {
+        let response = self.proxy_request(
+            reqwest::Method::POST,
+            "/auth/browser/finish",
+            None,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Cancel browser sign-in
+    pub async fn auth_browser_cancel(&self) -> Result<serde_json::Value> {
+        let response = self.proxy_request(
+            reqwest::Method::POST,
+            "/auth/browser/cancel",
+            None,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Handoff cookies/headers from browser (Settings paste fallback)
+    pub async fn auth_handoff(&self, cookies: serde_json::Value, headers: Option<serde_json::Value>) -> Result<serde_json::Value> {
+        let mut payload = serde_json::json!({ "cookies": cookies });
+        if let Some(headers) = headers {
+            payload["headers"] = headers;
+        }
+        
+        let response = self.authenticated_request(
+            reqwest::Method::POST,
+            "/auth/handoff",
+            Some(&payload),
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Get auth status
+    pub async fn auth_status(&self) -> Result<serde_json::Value> {
+        let response = self.proxy_request(
+            reqwest::Method::GET,
+            "/auth/status",
+            None,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Sign out
+    pub async fn auth_signout(&self) -> Result<serde_json::Value> {
+        let response = self.authenticated_request(
+            reqwest::Method::POST,
+            "/auth/signout",
+            None::<&()>,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    // ===== Account/Data endpoints =====
+
+    /// Get account info
+    pub async fn account(&self) -> Result<serde_json::Value> {
+        let response = self.authenticated_request(
+            reqwest::Method::GET,
+            "/account",
+            None::<&()>,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Get home rows
+    pub async fn home(&self) -> Result<serde_json::Value> {
+        let response = self.authenticated_request(
+            reqwest::Method::GET,
+            "/home",
+            None::<&()>,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Search
+    pub async fn search(&self, query: &str, filter: Option<&str>) -> Result<serde_json::Value> {
+        let mut url = format!("/search?q={}", urlencoding::encode(query));
+        if let Some(filter) = filter {
+            url.push_str(&format!("&filter={}", urlencoding::encode(filter)));
+        }
+        let response = self.authenticated_request(
+            reqwest::Method::GET,
+            &url,
+            None::<&()>,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Get stream URL
+    pub async fn stream(&self, video_id: &str) -> Result<serde_json::Value> {
+        let response = self.authenticated_request(
+            reqwest::Method::GET,
+            &format!("/stream/{}", video_id),
+            None::<&()>,
+        ).await?;
+        let json: serde_json::Value = response.json().await?;
+        Ok(json)
+    }
+
+    /// Shutdown the sidecar
+    pub async fn shutdown(&self) -> Result<()> {
+        let mut process = self.sidecar_process.lock().await;
+        if let Some(mut child) = process.take() {
+            info!("Shutting down Python sidecar");
+            let _ = child.kill().await;
+        }
+        Ok(())
+    }
+}
+
+impl Default for PythonSidecarManager {
+    fn default() -> Self {
+        Self::new().expect("Failed to create PythonSidecarManager")
     }
 }
 

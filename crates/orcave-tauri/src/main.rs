@@ -32,7 +32,7 @@ use orcave_recommendations::{
     commands as recommendations_commands, RecommendationService, RecommendationSet,
 };
 use orcave_settings::{NativeSessionService, SessionError, Settings, SettingsService};
-use orcave_windows::WindowsIntegration;
+use orcave_windows::{WindowsIntegration, PythonSidecarManager};
 
 /// Tauri command handlers for settings
 #[tauri::command]
@@ -132,6 +132,142 @@ async fn settings_reset(state: tauri::State<'_, Arc<SettingsService>>) -> TauriR
         .map_err(|e| TauriError::Settings(e.to_string()))
 }
 
+// ===== Browser-based authentication commands (Python sidecar) =====
+
+/// Browser info for sign-in prompt
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+struct BrowserInfo {
+    browser: String,
+}
+
+/// Browser sign-in status
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+struct BrowserAuthStatus {
+    state: String,
+    browser: String,
+    error: Option<String>,
+}
+
+/// Start browser-based sign-in flow
+#[tauri::command]
+async fn auth_browser_start(
+    sidecar: tauri::State<'_, Arc<PythonSidecarManager>>,
+    open_browser: Option<bool>,
+) -> TauriResult<BrowserAuthStatus> {
+    let open = open_browser.unwrap_or(true);
+    let result = sidecar
+        .auth_browser_start(open)
+        .await
+        .map_err(|e| TauriError::Auth(e.to_string()))?;
+    
+    Ok(BrowserAuthStatus {
+        state: result.get("state").and_then(|v| v.as_str()).unwrap_or("unknown").to_string(),
+        browser: result.get("browser").and_then(|v| v.as_str()).unwrap_or("your browser").to_string(),
+        error: result.get("error").and_then(|v| v.as_str()).map(|s| s.to_string()),
+    })
+}
+
+/// Get browser sign-in status
+#[tauri::command]
+async fn auth_browser_status(
+    sidecar: tauri::State<'_, Arc<PythonSidecarManager>>,
+) -> TauriResult<BrowserAuthStatus> {
+    let result = sidecar
+        .auth_browser_status()
+        .await
+        .map_err(|e| TauriError::Auth(e.to_string()))?;
+    
+    Ok(BrowserAuthStatus {
+        state: result.get("state").and_then(|v| v.as_str()).unwrap_or("idle").to_string(),
+        browser: result.get("browser").and_then(|v| v.as_str()).unwrap_or("your browser").to_string(),
+        error: result.get("error").and_then(|v| v.as_str()).map(|s| s.to_string()),
+    })
+}
+
+/// Get browser info (which browser will be used for sign-in)
+#[tauri::command]
+async fn auth_browser_info(
+    sidecar: tauri::State<'_, Arc<PythonSidecarManager>>,
+) -> TauriResult<BrowserInfo> {
+    let result = sidecar
+        .auth_browser_info()
+        .await
+        .map_err(|e| TauriError::Auth(e.to_string()))?;
+    
+    Ok(BrowserInfo {
+        browser: result.get("browser").and_then(|v| v.as_str()).unwrap_or("your browser").to_string(),
+    })
+}
+
+/// User confirms they've signed in - close window and read cookies
+#[tauri::command]
+async fn auth_browser_finish(
+    sidecar: tauri::State<'_, Arc<PythonSidecarManager>>,
+) -> TauriResult<BrowserAuthStatus> {
+    let result = sidecar
+        .auth_browser_finish()
+        .await
+        .map_err(|e| TauriError::Auth(e.to_string()))?;
+    
+    Ok(BrowserAuthStatus {
+        state: result.get("state").and_then(|v| v.as_str()).unwrap_or("unknown").to_string(),
+        browser: result.get("browser").and_then(|v| v.as_str()).unwrap_or("your browser").to_string(),
+        error: result.get("error").and_then(|v| v.as_str()).map(|s| s.to_string()),
+    })
+}
+
+/// Cancel browser sign-in flow
+#[tauri::command]
+async fn auth_browser_cancel(
+    sidecar: tauri::State<'_, Arc<PythonSidecarManager>>,
+) -> TauriResult<BrowserAuthStatus> {
+    let result = sidecar
+        .auth_browser_cancel()
+        .await
+        .map_err(|e| TauriError::Auth(e.to_string()))?;
+    
+    Ok(BrowserAuthStatus {
+        state: result.get("state").and_then(|v| v.as_str()).unwrap_or("cancelled").to_string(),
+        browser: result.get("browser").and_then(|v| v.as_str()).unwrap_or("your browser").to_string(),
+        error: result.get("error").and_then(|v| v.as_str()).map(|s| s.to_string()),
+    })
+}
+
+/// Handoff cookies/headers from browser (Settings paste fallback)
+#[tauri::command]
+async fn auth_handoff(
+    sidecar: tauri::State<'_, Arc<PythonSidecarManager>>,
+    cookies: serde_json::Value,
+    headers: Option<serde_json::Value>,
+) -> TauriResult<serde_json::Value> {
+    sidecar
+        .auth_handoff(cookies, headers)
+        .await
+        .map_err(|e| TauriError::Auth(e.to_string()))
+}
+
+/// Get auth status
+#[tauri::command]
+async fn auth_status(
+    sidecar: tauri::State<'_, Arc<PythonSidecarManager>>,
+) -> TauriResult<serde_json::Value> {
+    sidecar
+        .auth_status()
+        .await
+        .map_err(|e| TauriError::Auth(e.to_string()))
+}
+
+/// Sign out
+#[tauri::command]
+async fn auth_signout(
+    sidecar: tauri::State<'_, Arc<PythonSidecarManager>>,
+) -> TauriResult<serde_json::Value> {
+    sidecar
+        .auth_signout()
+        .await
+        .map_err(|e| TauriError::Auth(e.to_string()))
+}
+
 // ===== Native session commands (legacy local material, not provider verification) =====
 
 /// Redacted local-material status for the frontend. Never signals provider access.
@@ -142,18 +278,6 @@ struct SessionStatus {
     expired: bool,
     ttl_secs: u64,
     handle: Option<String>,
-}
-
-/// No provider-authorized browser handoff exists. Reject without opening a browser.
-#[tauri::command]
-async fn auth_connect_browser_session() -> Result<SessionStatus, SessionError> {
-    Err(SessionError::Unsupported)
-}
-
-/// No browser-session flow can start; cancellation must not erase legacy material.
-#[tauri::command]
-async fn auth_cancel_flow() -> Result<(), SessionError> {
-    Ok(())
 }
 
 #[tauri::command]
@@ -489,6 +613,15 @@ pub fn run() -> Result<()> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            // Browser-based authentication commands (Python sidecar)
+            auth_browser_start,
+            auth_browser_status,
+            auth_browser_info,
+            auth_browser_finish,
+            auth_browser_cancel,
+            auth_handoff,
+            auth_status,
+            auth_signout,
             // Legacy OAuth commands remain separate; none validate browser sessions.
             auth_cancel_flow,
             auth_commands::auth_refresh_token,
@@ -549,7 +682,6 @@ pub fn run() -> Result<()> {
             settings_remove,
             settings_reset,
             // Native session commands
-            auth_connect_browser_session,
             native_session_disconnect,
             native_session_get_status,
             diagnostics_native_probe,
@@ -579,6 +711,11 @@ async fn initialize_app(app_handle: tauri::AppHandle) -> Result<()> {
 
     // Initialize Windows integration with settings
     let windows = Arc::new(WindowsIntegration::new(settings.clone(), store).await?);
+
+    // Initialize Python sidecar manager for browser-based authentication
+    let sidecar = Arc::new(PythonSidecarManager::new()?);
+    sidecar.launch().await?;
+    sidecar.fetch_install_token().await.ok(); // Best effort
 
     // Initialize auth
     let auth = Arc::new(AuthService::new(settings.clone(), windows.clone()).await?);
@@ -761,6 +898,7 @@ async fn initialize_app(app_handle: tauri::AppHandle) -> Result<()> {
     app_handle.manage(queue);
     app_handle.manage(library);
     app_handle.manage(recommendations);
+    app_handle.manage(sidecar);
 
     handle.state.set_lifecycle(AppLifecycle::Running);
     handle.emit(AppEvent::Diagnostic(DiagnosticEvent::PerformanceMetric {

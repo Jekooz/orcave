@@ -73,18 +73,18 @@ from services.ytmusic_client import (
 
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("ytmusic-backend")
+logger = logging.getLogger("orcave-backend")
 
-# The published port file. Defaults to %LOCALAPPDATA%\Sonore\sidecar_port.txt
+# The published port file. Defaults to %LOCALAPPDATA%\Orcave\sidecar_port.txt
 # (per-user, outside the app folder and %TEMP%, so a cleaner for temp files
 # cannot delete it while the service runs). YTM_PORT_FILE overrides the path so
 # an isolated instance -- a test, or a second copy on the same machine -- can
 # publish without touching the shared file and without disturbing a live app.
-_SONORE_STATE_DIR = os.path.join(
-    os.environ.get("LOCALAPPDATA", tempfile.gettempdir()), "Sonore"
+_ORCAVE_STATE_DIR = os.path.join(
+    os.environ.get("LOCALAPPDATA", tempfile.gettempdir()), "Orcave"
 )
 PORT_FILE = os.environ.get("YTM_PORT_FILE") or os.path.join(
-    _SONORE_STATE_DIR, "sidecar_port.txt"
+    _ORCAVE_STATE_DIR, "sidecar_port.txt"
 )
 
 # The port file publishing below needs no in-process record of the bound port:
@@ -280,7 +280,7 @@ def _complete_browser_capture(cookies: dict, source: str) -> None:
 
 # One random token per install, stored encrypted next to the session material.
 # Every endpoint that returns account data or a stream requires it (header
-# `X-Sonore-Token`), so a stray local caller or a forged web origin cannot
+# `X-Orcave-Token`), so a stray local caller or a forged web origin cannot
 # reach the account even when loopback itself is allowed. It never rotates
 # while the install exists; learning it requires reading the encrypted file or
 # being shown it in the app's Settings -> Account.
@@ -309,15 +309,15 @@ def _ensure_install_token() -> str:
 
 def _require_install_token(request: Request) -> str | None:
     """Why this caller must not use a locked endpoint, or None."""
-    provided = request.headers.get("X-Sonore-Token")
+    provided = request.headers.get("X-Orcave-Token")
     if not provided:
-        return "The Sonore API token is required."
+        return "The Orcave API token is required."
     try:
         expected = _ensure_install_token()
     except StorageError:
         return "The API token is unavailable."
     if not secrets.compare_digest(provided, expected):
-        return "The Sonore API token is not valid."
+        return "The Orcave API token is not valid."
     return None
 
 
@@ -1187,11 +1187,11 @@ _STREAM_CACHE_MAX = 240
 _RESOLVE_GATE = threading.BoundedSemaphore(2)
 _RESOLVE_GATE_WAIT_SECONDS = 20
 
-# yt-dlp: prefer a copy this app updated in %LOCALAPPDATA%\Sonore\bin\, then the
+# yt-dlp: prefer a copy this app updated in %LOCALAPPDATA%\Orcave\bin\, then the
 # copy the installer ships beside the app (the sidecar's working directory is
 # backend\, so PATH alone would never find it), then PATH, and finally the bare
 # name so a missing binary produces one clear 503.
-_YT_DLP_DIR = os.path.join(_SONORE_STATE_DIR, "bin")
+_YT_DLP_DIR = os.path.join(_ORCAVE_STATE_DIR, "bin")
 _YT_DLP_UPDATED = os.path.join(_YT_DLP_DIR, "yt-dlp.exe")
 _YT_DLP_BUNDLED = os.path.join(_APP_ROOT, "yt-dlp.exe")
 
@@ -1212,8 +1212,8 @@ _YT_DLP = _resolve_yt_dlp()
 _AUDIO_FORMAT = "bestaudio[ext=m4a]/bestaudio[acodec^=mp4a]/bestaudio"
 
 # yt-dlp auto-update: at most once per day, in the background, results recorded
-# in %LOCALAPPDATA%\Sonore\update_state.json for Settings to report.
-_UPDATE_STATE_FILE = os.path.join(_SONORE_STATE_DIR, "update_state.json")
+# in %LOCALAPPDATA%\Orcave\update_state.json for Settings to report.
+_UPDATE_STATE_FILE = os.path.join(_ORCAVE_STATE_DIR, "update_state.json")
 _UPDATE_CHECK_SECONDS = 24 * 60 * 60
 _updating = False
 _updating_lock = threading.Lock()
@@ -1430,7 +1430,7 @@ def _resolve_stream(video_id: str) -> str:
             detail=(
                 "The playback engine (yt-dlp) is not installed. "
                 "Update it in Settings > Playback, or place yt-dlp.exe in "
-                "%LOCALAPPDATA%/Sonore/bin/."
+                "%LOCALAPPDATA%/Orcave/bin/."
             ),
         )
     except subprocess.TimeoutExpired:
