@@ -11,7 +11,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
@@ -25,6 +25,7 @@ use reqwest;
 use serde::{Deserialize, Serialize};
 use tauri::Wry;
 use tauri_plugin_store::Store;
+use tokio::process::Command;
 use tokio::sync::{broadcast, Mutex};
 use tokio::time::sleep;
 use tracing::{debug, info, instrument, warn, error};
