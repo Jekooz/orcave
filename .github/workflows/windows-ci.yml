@@ -59,24 +59,19 @@ jobs:
 
       - name: Build Python sidecar executable
         run: |
-          $args = @(
-            "--onefile"
-            "--name" "main"
-            "--distpath" "backend"
-            "--hidden-import" "services.browser_auth"
-            "--hidden-import" "services.browser_cookies"
-            "--hidden-import" "services.ytmusic_client"
-            "--hidden-import" "services.listening"
-            "--hidden-import" "services.ranking"
-            "--hidden-import" "services.recommend"
-            "--hidden-import" "keyring"
-            "--hidden-import" "keyring.backends.Windows"
-            "--hidden-import" "ytmusicapi"
-            "--hidden-import" "pydantic"
-            "--hidden-import" "pydantic_core"
-            "backend/main.py"
-          )
-          pyinstaller $args
+          pyinstaller --onefile --name main --distpath backend ^
+            --hidden-import services.browser_auth ^
+            --hidden-import services.browser_cookies ^
+            --hidden-import services.ytmusic_client ^
+            --hidden-import services.listening ^
+            --hidden-import services.ranking ^
+            --hidden-import services.recommend ^
+            --hidden-import keyring ^
+            --hidden-import keyring.backends.Windows ^
+            --hidden-import ytmusicapi ^
+            --hidden-import pydantic ^
+            --hidden-import pydantic_core ^
+            backend/main.py
           # Verify the executable was created
           if (-not (Test-Path "backend/main.exe")) { throw "Failed to build Python sidecar executable" }
 
