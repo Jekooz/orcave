@@ -79,6 +79,8 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path "crates/orcave-tauri/backend" | Out-Null
           Copy-Item -Path "backend/main.exe" -Destination "crates/orcave-tauri/backend/main.exe" -Force
+          # Also copy with target triple suffix for Tauri externalBin
+          Copy-Item -Path "backend/main.exe" -Destination "crates/orcave-tauri/backend/main.exe-x86_64-pc-windows-msvc.exe" -Force
 
       - name: Prepare frontendDist for Tauri proc macro validation
         run: |
