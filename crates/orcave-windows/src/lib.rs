@@ -1114,7 +1114,6 @@ use std::process::{Command, Stdio};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::time::{Duration, sleep};
-use tracing::{info, warn, error, debug};
 
 /// Python sidecar manager - handles launching and communicating with the
 /// Python FastAPI backend for YouTube Music authentication.
